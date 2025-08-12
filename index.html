@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChefVision AI Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #d62828;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .content {
+      padding: 2rem;
+    }
+    #status {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 1rem;
+    }
+    .date {
+      font-size: 0.85rem;
+      color: #666;
+      min-width: 90px;
+    }
+    .info {
+      flex: 1;
+    }
+    .category {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 0.3rem;
+    }
+    .title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .summary {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .source {
+      font-size: 0.85rem;
+      color: #0077cc;
+    }
+  </style>
+</head>
+<body>
+  <header>ChefVision AI — Günlük Keşif Paneli</header>
+  <div class="content">
+    <div id="status">📡 Öneriler yükleniyor...</div>
+    <div id="cardContainer"></div>
+  </div>
+
+  <script>
+    const state = { items: [] };
+
+    function formatDate(dateStr) {
+      const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+      const d = new Date(dateStr);
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function render() {
+      const container = document.getElementById('cardContainer');
+      container.innerHTML = '';
+      state.items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="date">${formatDate(item.tarih)}</div>
+          <div class="info">
+            <div class="category">${item.kategori}</div>
+            <div class="title">${item.başlık}</div>
+            <div class="summary">${item.özet}</div>
+            <div class="source">Kaynak: <a href="${item.url}" target="_blank">${item.kaynak}</a></div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function load() {
+      const status = document.getElementById('status');
+      try {
+        const url = 'data/today.json?cache=' + Date.now();
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`data/today.json yüklenemedi (HTTP ${res.status})`);
+        }
+        state.items = await res.json();
+        if (!Array.isArray(state.items) || state.items.length === 0) {
+          throw new Error("today.json boş veya format hatalı");
+        }
+        status.textContent = `Bugünün ${state.items.length} önerisi yüklendi.`;
+        render();
+      } catch (err) {
+        console.error(err);
+        status.style.color = "red";
+        status.textContent = "❌ Öneriler yüklenemedi: " + err.message +
+          " — Lütfen 'data/today.json' dosyasının repo kökünde olduğundan emin ol.";
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
